@@ -14,7 +14,7 @@ java {
 // Which Hytale server artifact to compile against. Defaults live in gradle.properties
 // and can be overridden with -Phytale_channel=release -Phytale_version=0.6.8
 val hytaleChannel = (project.findProperty("hytale_channel") as String?)?.trim() ?: "release"
-val hytaleVersion = (project.findProperty("hytale_version") as String?)?.trim() ?: "0.7.0"
+val hytaleVersion = (project.findProperty("hytale_version") as String?)?.trim() ?: "0.7.1"
 require(hytaleChannel == "release" || hytaleChannel == "pre-release") {
     "hytale_channel must be \"release\" or \"pre-release\", got \"$hytaleChannel\""
 }
