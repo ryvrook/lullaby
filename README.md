@@ -1,7 +1,7 @@
 # Lullaby
 
-Vanilla Hytale ends the night only when every player in the world is in bed, including the friend in Creative
-and the one who went to make tea. Lullaby ends it when a share of the players sleep, 50% by default, or a fixed
+Vanilla Hytale ends the night only when every player in the world is in bed, including players in Creative
+and players who are away from the keyboard. Lullaby ends it when a share of the players sleep, 50% by default, or a fixed
 number of them. Sleepers keep the vanilla sleep clock, fade and success sound. It runs on the server only.
 
 ## Requirements
