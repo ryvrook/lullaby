@@ -216,10 +216,9 @@ somewhere else.
 
 The build pulls `com.hypixel.hytale:Server` from Hytale's Maven repository as a compile only dependency, so no
 manual server jar is needed. `hytale_channel` and `hytale_version` in `gradle.properties` choose the server
-artifact, `release` and `0.7.0` by default.
+artifact, `release` and `0.7.1` by default.
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the thread model and the headless smoke test, and
-[docs/TESTING.md](docs/TESTING.md) for the in game test sheet.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the thread model and the headless smoke test.
 
 ## Contributing
 
@@ -229,8 +228,7 @@ The threshold maths lives in `model/Rule.java` and who counts in `sleep/Eligibil
 when a night ends is made in `sleep/SleepCoordinator.java`, which the native copies in `nativesys/` ask before
 they start or cut short a slumber. New config keys go into `config/LullabyConfig.java` with their default, get
 clamped in `config/Settings.java`, and need a row in the configuration table above. For changes to the native
-systems or the coordinator, run the headless smoke test in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) and the
-matching checks of the test sheet.
+systems or the coordinator, run the headless smoke test in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## License
 

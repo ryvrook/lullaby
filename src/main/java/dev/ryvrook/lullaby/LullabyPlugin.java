@@ -273,7 +273,7 @@ public final class LullabyPlugin extends JavaPlugin {
             protected void afterExecute(Runnable task, Throwable failure) {
                 super.afterExecute(task, failure);
                 if (failure != null) {
-                    getLogger().at(Level.WARNING).withCause(failure).log("Lullaby file task failed");
+                    getLogger().at(Level.WARNING).withCause(failure).log("Lullaby IO task failed");
                 }
             }
         };

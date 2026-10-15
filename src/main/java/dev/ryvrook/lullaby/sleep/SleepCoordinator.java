@@ -24,9 +24,9 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
- * The brain of Lullaby. Every method that takes a store runs on that world's thread, called from a
- * Lullaby system tick. It decides when a night ends, sends progress lines, runs manual and dynamic skips,
- * and answers the native slumber systems.
+ * Decides when a night ends. Every method that takes a store runs on that world's thread, called from a
+ * Lullaby system tick. It sends the progress lines, runs manual and dynamic skips and answers the native
+ * slumber systems.
  */
 public final class SleepCoordinator {
     private static final float EVAL_INTERVAL_S = 0.3f;
@@ -418,7 +418,7 @@ public final class SleepCoordinator {
             }
         }
         announcer.skipped(world, sleepers, s);
-        logger.at(Level.INFO).log("Lullaby skipped the night in %s, %d slept, %d nights so far, %d stormy places cleared",
+        logger.at(Level.INFO).log("Lullaby skipped the night in %s, %d slept, %d nights so far, storms cleared in %d environments",
                 world.getName(), sleepers, total, calmed);
     }
 }

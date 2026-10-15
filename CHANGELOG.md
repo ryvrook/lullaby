@@ -3,6 +3,14 @@
 Every notable change to Lullaby is recorded here. The format follows Keep a Changelog and the project uses
 semantic versioning.
 
+## Unreleased
+
+### Changed
+
+- The skip log line now says how many environments had their storms cleared.
+- `./gradlew build` runs 48 JUnit tests over the threshold maths, the config, the night test and the skip
+  decisions.
+
 ## 1.0.0 - 2026-10-13
 
 First release. Needs the Hytale 0.7.0 release server or newer.

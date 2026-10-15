@@ -17,6 +17,16 @@ The jar lands in `build/libs/Lullaby-<version>.jar` and `installMod` copies it i
 Hytale server artifact comes from the Hytale Maven repository, and `hytale_channel` and `hytale_version` in
 `gradle.properties` select it.
 
+## Tests
+
+`./gradlew build` runs 48 JUnit tests under `src/test/java` without a server. The server jar sits on the test
+classpath only for the codecs, bson and the logger. They cover the threshold maths in `Rule`, `SleepSnapshot`,
+the clamping and per world inheritance in `Settings`, reading and writing `Lullaby.json` through the codec, the
+wake up and night maths in `WakeTime`, the start, cooldown, hold and dynamic speed decisions in
+`SleepCoordinator`, the progress line, the idle check, the storm words and the two data files with a broken one
+kept aside. Anything that needs a store, a world or the registry swap is left to the smoke test below and to a
+client with real players.
+
 ## Source layout
 
 | Package | What lives there |
@@ -104,7 +114,8 @@ The coordinator checks the threshold every 0.3 seconds. When it is met it calls
 time at once when that is 0. When the interpolation ends it wakes everyone in bed with `Waker` and plays the
 vanilla success sound. If the players in bed drop below the needed number during the fast forward, the
 interpolation is cancelled where it is and nothing is counted. If vanilla starts its own slumber meanwhile,
-Lullaby cancels its interpolation and lets vanilla finish. A vanilla slumber that moved the clock by at least an hour is counted as a skipped night.
+Lullaby cancels its interpolation and lets vanilla finish. A vanilla slumber that moved the clock by at least an hour is counted as a skipped
+night.
 
 ## Dynamic nights
 
@@ -160,11 +171,11 @@ looks like a pack. A console `plugin reload` prints
 and swaps the systems on a bare server, so `--bare` is a quick boot check, while the world run above is the full
 check.
 
-A headless server has no players, so it cannot show the threshold, wake up or dynamic behaviour. Those are
-covered by the client test sheet in [TESTING.md](TESTING.md).
+A headless server has no players, so it cannot show the threshold, wake up or dynamic behaviour. I check those
+on a client with two or more players in the world.
 
 ## Pull requests
 
-Keep each change focused on one thing and make sure `./gradlew build` passes with no new warnings. For changes
-to the native systems or the coordinator, run the smoke test above and the matching checks of the test sheet,
-and say in the pull request what you checked. Player facing text uses plain sentences and commas.
+Keep each change focused on one thing and make sure `./gradlew build` passes with no new warnings. A change to
+a rule in `model`, `config` or the static decisions of `SleepCoordinator` comes with a test. For changes to the
+native systems or the coordinator, run the smoke test above and say in the pull request what you checked. Player facing text uses plain sentences and commas.

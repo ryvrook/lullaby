@@ -20,7 +20,7 @@ body:
     attributes:
       label: Hytale server version
       description: The version printed at the top of the server log.
-      placeholder: "0.7.0"
+      placeholder: "0.7.1"
     validations:
       required: true
   - type: input
@@ -28,7 +28,7 @@ body:
     attributes:
       label: Other mods installed
       description: Every other jar in the mods folder, with versions when you know them.
-      placeholder: Feats 1.2.1, Atlas 0.2.2
+      placeholder: Feats 1.5.1, Atlas 1.6.0
     validations:
       required: false
   - type: input
@@ -60,7 +60,7 @@ body:
     id: log
     attributes:
       label: Server log
-      description: The lines around the problem from the server log. Any stack trace is especially useful. This will be formatted as code.
+      description: The lines around the problem from the server log. Include any stack trace. This will be formatted as code.
       render: text
     validations:
       required: false
@@ -68,7 +68,7 @@ body:
     id: config
     attributes:
       label: Config
-      description: The mod config file, with any secrets such as tokens removed. This will be formatted as code.
+      description: Lullaby.json from mods/Ryvrook_Lullaby. This will be formatted as code.
       render: json
     validations:
       required: false
