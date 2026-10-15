@@ -1,7 +1,7 @@
 {
   "Group": "Ryvrook",
   "Name": "Lullaby",
-  "Version": "1.0.0",
+  "Version": "1.0.1",
   "Description": "Multiplayer sleep for Hytale servers. Skip the night when a set number or percentage of players are in bed, with per world rules, progress messages and admin commands.",
   "Main": "dev.ryvrook.lullaby.LullabyPlugin",
   "Authors": [{ "Name": "ryvrook" }],
