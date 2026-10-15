@@ -5,10 +5,12 @@ semantic versioning.
 
 ## Unreleased
 
+Nothing changes for players and no setting changed, so updating is a jar swap.
+
 ### Changed
 
-- The skip log line now says how many environments had their storms cleared.
-- `./gradlew build` runs 50 JUnit tests over the threshold maths, the config, the night test and the skip
+- The skip log line says how many environments had their storms cleared.
+- `./gradlew build` runs 50 JUnit tests over the threshold maths, the config, the night check and the skip
   decisions.
 
 ## 1.0.0 - 2026-10-13
