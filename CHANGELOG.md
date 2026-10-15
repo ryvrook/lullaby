@@ -3,7 +3,7 @@
 Every notable change to Lullaby is recorded here. The format follows Keep a Changelog and the project uses
 semantic versioning.
 
-## Unreleased
+## 1.0.1 - 2026-10-15
 
 Nothing changes for players and no setting changed, so updating is a jar swap.
 

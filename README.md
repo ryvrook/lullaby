@@ -13,7 +13,7 @@ A pre-release server logs a warning that the plugin targets `>=0.7.0`. The plugi
 
 ## Install
 
-Drop `Lullaby-1.0.0.jar` into `UserData/Mods` for a singleplayer world (`%APPDATA%\Hytale\UserData\Mods` on
+Drop `Lullaby-<version>.jar` into `UserData/Mods` for a singleplayer world (`%APPDATA%\Hytale\UserData\Mods` on
 Windows, `~/Library/Application Support/Hytale/UserData/Mods` on macOS) or into the server's `mods/` folder.
 Start the server and look for `Lullaby ready, mode native, 50% of players needed` in the log. The config is
 written to `mods/Ryvrook_Lullaby/Lullaby.json`.
