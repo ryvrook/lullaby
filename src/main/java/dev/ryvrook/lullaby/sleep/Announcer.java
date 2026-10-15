@@ -52,7 +52,7 @@ public final class Announcer {
             // The line goes out when someone gets into bed, before they count as ready, so it names the
             // speed their sleep will give once it does.
             double share = snap.eligible() <= 0 ? 0.0 : Math.min(1.0, (double) snap.inBed() / snap.eligible());
-            long speed = Math.round(1 + (settings.dynamicMaxSpeed() - 1) * share);
+            long speed = Math.round(SleepCoordinator.dynamicSpeed(settings.dynamicMaxSpeed(), share));
             return head + (speed <= 1 ? "time will speed up in a moment" : "time runs " + speed + "x faster");
         }
         int missing = snap.missing();

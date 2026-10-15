@@ -44,12 +44,15 @@ public final class WakeTime {
      * is already a day away.
      */
     public static boolean isNight(WorldTimeResource time, World world) {
-        float progress = time.getDayProgress();
+        return isNight(time.getDayProgress(), time.getGameTime(), wakeHour(world));
+    }
+
+    /** The same test on plain values, {@code progress} from 0 at midnight to 1. */
+    static boolean isNight(float progress, Instant now, float wakeHour) {
         if (progress < 0.8f && progress >= 0.2f) {
             return false;
         }
-        Instant now = time.getGameTime();
-        return Duration.between(now, wakeInstant(now, wakeHour(world))).compareTo(Duration.ofHours(12)) <= 0;
+        return Duration.between(now, wakeInstant(now, wakeHour)).compareTo(Duration.ofHours(12)) <= 0;
     }
 
     /** Today at the wake up hour, or tomorrow when that is not after {@code now}. Copied from vanilla. */

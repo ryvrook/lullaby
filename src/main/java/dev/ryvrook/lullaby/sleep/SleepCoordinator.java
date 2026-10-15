@@ -76,8 +76,45 @@ public final class SleepCoordinator {
 
     /** Seconds left of the cooldown after the last skip in this world, 0 when none. */
     public long cooldownLeft(World world) {
-        long left = state(world).lastSkipAt + settings.get().cooldownSeconds() * 1000L - System.currentTimeMillis();
+        return secondsLeft(System.currentTimeMillis(), state(world).lastSkipAt, settings.get().cooldownSeconds());
+    }
+
+    /** Whole seconds left of a cooldown, rounded up, 0 once it ran out. */
+    static long secondsLeft(long now, long lastSkipAt, int cooldownSeconds) {
+        long left = lastSkipAt + cooldownSeconds * 1000L - now;
         return left <= 0 ? 0 : (left + 999) / 1000;
+    }
+
+    /** True while the cooldown after the last skip runs. A world that never skipped is not cooling. */
+    static boolean cooling(long now, long lastSkipAt, int cooldownSeconds) {
+        return now - lastSkipAt < cooldownSeconds * 1000L;
+    }
+
+    /** True while enough players stay in bed to keep a skip going. Below that it is cut short. */
+    static boolean held(SleepSnapshot snap) {
+        return snap.inBed() >= snap.needed();
+    }
+
+    /** How many times as fast a dynamic night runs, from 1 with nobody asleep to {@code maxSpeed} with everyone. */
+    public static double dynamicSpeed(int maxSpeed, double share) {
+        return 1.0 + (maxSpeed - 1) * Math.max(0.0, Math.min(1.0, share));
+    }
+
+    /** A vanilla slumber that moved the clock by at least an hour finished the night. One cut short barely moves it. */
+    static boolean completedSlumber(Instant start, Instant end) {
+        return Duration.between(start, end).compareTo(COMPLETED_SLUMBER) >= 0;
+    }
+
+    /**
+     * What the native start system should do. The Lullaby threshold is only asked for when the world is
+     * enabled, the rule is percent or count and no cooldown runs. Everything else falls back to the vanilla
+     * rule, every player ready.
+     */
+    static Start decideStart(Rule rule, boolean cooling, BooleanSupplier thresholdMet, BooleanSupplier everyoneReady) {
+        if (rule.enabled() && rule.requirement() != Requirement.DYNAMIC && !cooling && thresholdMet.getAsBoolean()) {
+            return Start.LULLABY;
+        }
+        return everyoneReady.getAsBoolean() ? Start.VANILLA : Start.NONE;
     }
 
     /** Drops what Lullaby remembers about a world that was removed, such as a finished instance. */
@@ -175,13 +212,13 @@ public final class SleepCoordinator {
             }
             st.lastAnnounced = snap.inBed();
         }
-        if (st.manualSkipping && snap.inBed() < snap.needed()) {
+        if (st.manualSkipping && !held(snap)) {
             // Too many sleepers got up during a manual fast forward, so it stops where it is, like a native
             // slumber that is cut short.
             time.cancelInterpolation();
             st.manualSkipping = false;
         }
-        boolean cooling = now - st.lastSkipAt < s.cooldownSeconds() * 1000L;
+        boolean cooling = cooling(now, st.lastSkipAt, s.cooldownSeconds());
         if (vanillaSlumber || st.manualSkipping || cooling) {
             st.dynamicActive = false;
             return;
@@ -214,9 +251,9 @@ public final class SleepCoordinator {
             return;
         }
         if (st.vanillaSlumberStart != null) {
-            Duration moved = Duration.between(st.vanillaSlumberStart, time.getGameTime());
+            Instant start = st.vanillaSlumberStart;
             st.vanillaSlumberStart = null;
-            if (rule.enabled() && moved.compareTo(COMPLETED_SLUMBER) >= 0) {
+            if (rule.enabled() && completedSlumber(start, time.getGameTime())) {
                 skipped(world, store, time, st, s, st.vanillaSlumberSleepers);
             }
         }
@@ -277,7 +314,7 @@ public final class SleepCoordinator {
         if (st.dynamicTarget == null) {
             st.dynamicTarget = WakeTime.wakeInstant(now, WakeTime.wakeHour(world));
         }
-        double speed = 1.0 + (s.dynamicMaxSpeed() - 1) * snap.readyShare();
+        double speed = dynamicSpeed(s.dynamicMaxSpeed(), snap.readyShare());
         double extraSeconds = (speed - 1.0) * dt * WakeTime.nightRate(world);
         if (extraSeconds <= 0) {
             return;
@@ -311,14 +348,9 @@ public final class SleepCoordinator {
         Settings s = settings.get();
         Rule rule = s.ruleFor(world.getName());
         long now = System.currentTimeMillis();
-        boolean cooling = now - st.lastSkipAt < s.cooldownSeconds() * 1000L;
-        if (rule.enabled() && rule.requirement() != Requirement.DYNAMIC && !cooling) {
-            SleepSnapshot snap = Eligibility.snapshot(world, store, s, rule, data, afk, now);
-            if (snap.met()) {
-                return Start.LULLABY;
-            }
-        }
-        return Eligibility.everyoneReady(world, store) ? Start.VANILLA : Start.NONE;
+        return decideStart(rule, cooling(now, st.lastSkipAt, s.cooldownSeconds()),
+                () -> Eligibility.snapshot(world, store, s, rule, data, afk, now).met(),
+                () -> Eligibility.everyoneReady(world, store));
     }
 
     /** The Lullaby start system began a slumber. */
@@ -348,7 +380,7 @@ public final class SleepCoordinator {
             Rule rule = s.ruleFor(world.getName());
             if (rule.enabled() && rule.requirement() != Requirement.DYNAMIC) {
                 SleepSnapshot snap = Eligibility.snapshot(world, store, s, rule, data, afk, System.currentTimeMillis());
-                return snap.inBed() < snap.needed();
+                return !held(snap);
             }
         }
         return Eligibility.someoneAwake(world, store);

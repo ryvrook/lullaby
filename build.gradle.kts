@@ -30,6 +30,21 @@ repositories {
 dependencies {
     // Provided by the Hytale server at runtime; never bundled into the mod jar.
     compileOnly("com.hypixel.hytale:Server:$hytaleVersion")
+
+    // Tests run without a server. The server jar is only on the test classpath for the codecs, bson and the logger.
+    testImplementation("com.hypixel.hytale:Server:$hytaleVersion")
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("failed")
+    }
+    // The engine logger insists on owning java.util.logging before anything logs.
+    systemProperty("java.util.logging.manager", "com.hypixel.hytale.logger.backend.HytaleLogManager")
 }
 
 tasks.withType<JavaCompile>().configureEach {
