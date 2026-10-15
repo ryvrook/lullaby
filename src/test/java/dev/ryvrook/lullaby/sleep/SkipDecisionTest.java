@@ -72,6 +72,26 @@ class SkipDecisionTest {
     }
 
     @Test
+    void anEmptyWorldNeverHoldsAndOnePlayerAloneIsEnough() {
+        SleepSnapshot empty = new SleepSnapshot(0, 0, 0, PERCENT.needed(0, 1), List.of(), 0);
+        assertFalse(SleepCoordinator.held(empty));
+        assertFalse(empty.met());
+        SleepSnapshot alone = new SleepSnapshot(1, 1, 1, PERCENT.needed(1, 1), List.of(), 1);
+        assertTrue(SleepCoordinator.held(alone));
+        assertTrue(alone.met());
+        SleepSnapshot gotUp = new SleepSnapshot(1, 0, 0, PERCENT.needed(1, 1), List.of(), 1);
+        assertFalse(SleepCoordinator.held(gotUp));
+    }
+
+    @Test
+    void aZeroCooldownNeverRunsAndTheLastMillisecondStillCountsAsOneSecond() {
+        long skip = 1_000_000L;
+        assertEquals(0, SleepCoordinator.secondsLeft(skip, skip, 0));
+        assertEquals(1, SleepCoordinator.secondsLeft(skip + 59_999L, skip, 60));
+        assertTrue(SleepCoordinator.cooling(skip + 59_999L, skip, 60));
+    }
+
+    @Test
     void onlyAVanillaSlumberThatMovedTheClockAnHourCounts() {
         Instant start = Instant.parse("0001-01-05T22:00:00Z");
         assertTrue(SleepCoordinator.completedSlumber(start, start.plus(Duration.ofHours(6))));

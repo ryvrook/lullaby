@@ -8,7 +8,7 @@ semantic versioning.
 ### Changed
 
 - The skip log line now says how many environments had their storms cleared.
-- `./gradlew build` runs 48 JUnit tests over the threshold maths, the config, the night test and the skip
+- `./gradlew build` runs 50 JUnit tests over the threshold maths, the config, the night test and the skip
   decisions.
 
 ## 1.0.0 - 2026-10-13
@@ -37,4 +37,4 @@ First release. Needs the Hytale 0.7.0 release server or newer.
 - A cooldown after each skip and a per world count of skipped nights.
 - `/lullaby` (alias `/sleepers`) and `/lullaby ignore` for every player.
 - `/lullaby admin skip`, `set percent`, `set count`, `set dynamic`, `world <name> enabled` and `reload`, each
-  guarded by its own generated admin node.
+  guarded by its own admin node that the engine makes for it.

@@ -28,7 +28,7 @@ public final class LullabyCommand extends AbstractPlayerCommand {
         this.plugin = plugin;
         addAliases("sleepers");
         addSubCommand(new IgnoreCommand(plugin));
-        // No requireNoPermission here, so admin and each of its sub commands get generated admin only nodes.
+        // No requireNoPermission here, so admin and each of its sub commands get admin only nodes from the engine.
         addSubCommand(new AdminCommand(plugin));
     }
 

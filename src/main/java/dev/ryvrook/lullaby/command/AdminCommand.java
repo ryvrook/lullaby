@@ -18,7 +18,7 @@ import java.util.Locale;
 
 /**
  * {@code /lullaby admin ...} for server staff. None of these call requireNoPermission, so the engine
- * guards each one with its own generated node under {@code ryvrook.lullaby.command.lullaby.admin}. Every
+ * guards each one with a node of its own under {@code ryvrook.lullaby.command.lullaby.admin}. Every
  * sub command also works from the console.
  */
 final class AdminCommand extends AbstractCommandCollection {
