@@ -30,4 +30,18 @@ public record SleepSnapshot(int eligible, int inBed, int ready, int needed, List
     public double readyShare() {
         return eligible <= 0 ? 0.0 : Math.min(1.0, (double) ready / eligible);
     }
+
+    /**
+     * How far the world is towards a skip, from 0 to 1. In bed over needed, or in bed over eligible for a dynamic
+     * rule, where every sleeper makes the night run faster and needed is always 1.
+     */
+    public double progress(boolean dynamic) {
+        int of = dynamic ? eligible : needed;
+        return of <= 0 ? 0.0 : Math.min(1.0, (double) inBed / of);
+    }
+
+    /** Nobody in the world, or nobody counted. */
+    public static SleepSnapshot empty() {
+        return new SleepSnapshot(0, 0, 0, 1, List.of(), 0);
+    }
 }

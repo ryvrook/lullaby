@@ -53,4 +53,18 @@ class LullabyDataTest {
         data.save();
         assertTrue(Files.readString(dir.resolve("stats.json")).contains("NightsSkipped"));
     }
+
+    @Test
+    void nightsAddUpAcrossWorlds() {
+        LullabyData data = new LullabyData(dir, LOGGER);
+        data.load();
+        assertEquals(0, data.nightsSkippedTotal());
+        data.countSkip("default");
+        data.countSkip("default");
+        data.countSkip("Arena");
+        assertEquals(3, data.nightsSkippedTotal());
+        assertEquals(java.util.List.of("Arena", "default"), java.util.List.copyOf(data.nightsByWorld().keySet()));
+        data.nightsByWorld().clear();
+        assertEquals(2, data.nightsSkipped("default"));
+    }
 }

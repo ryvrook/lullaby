@@ -88,6 +88,20 @@ public final class LullabyData {
         return world == null ? 0 : nights.getOrDefault(world, 0);
     }
 
+    /** Nights skipped per world, a sorted copy. */
+    public Map<String, Integer> nightsByWorld() {
+        return new TreeMap<>(nights);
+    }
+
+    /** Nights skipped in every world together. */
+    public int nightsSkippedTotal() {
+        int total = 0;
+        for (int n : nights.values()) {
+            total += n;
+        }
+        return total;
+    }
+
     /** Adds one skipped night to a world and returns the new total. The caller saves. */
     public int countSkip(String world) {
         return nights.merge(world, 1, Integer::sum);

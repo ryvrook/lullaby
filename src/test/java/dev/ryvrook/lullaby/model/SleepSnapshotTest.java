@@ -38,4 +38,13 @@ class SleepSnapshotTest {
         assertEquals(0.25, snap(4, 2, 1, 2).readyShare());
         assertEquals(1.0, snap(2, 3, 3, 1).readyShare());
     }
+
+    @Test
+    void progressIsInBedOverNeededAndStopsAtOne() {
+        assertEquals(0.5, snap(4, 1, 0, 2).progress(false));
+        assertEquals(1.0, snap(4, 3, 3, 2).progress(false));
+        assertEquals(0.75, snap(4, 3, 0, 1).progress(true));
+        assertEquals(0.0, SleepSnapshot.empty().progress(true));
+        assertEquals(0.0, SleepSnapshot.empty().progress(false));
+    }
 }

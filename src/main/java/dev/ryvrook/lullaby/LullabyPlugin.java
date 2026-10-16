@@ -52,6 +52,7 @@ public final class LullabyPlugin extends JavaPlugin {
     /** The one thread Lullaby reads and writes files and changes the system registry on. */
     private ExecutorService io;
     private final AtomicBoolean saveQueued = new AtomicBoolean();
+    private volatile LullabyApiImpl api;
 
     public LullabyPlugin(JavaPluginInit init) {
         super(init);
@@ -97,7 +98,7 @@ public final class LullabyPlugin extends JavaPlugin {
         data.load();
         afk = new AfkTracker();
         coordinator = new SleepCoordinator(this::settings, data, afk, new Announcer(getLogger()), getLogger(),
-                this::saveDataSoon, () -> natives != null && natives.isActive());
+                this::saveDataSoon, () -> natives != null && natives.isActive(), new BusEvents(getLogger()));
         natives = new NativeSystems(coordinator, getLogger());
 
         getCommandRegistry().registerCommand(new LullabyCommand(this));
@@ -115,11 +116,23 @@ public final class LullabyPlugin extends JavaPlugin {
     protected void start() {
         applyMode();
         touchOnlinePlayers();
+        api = new LullabyApiImpl(getManifest().getVersion().toString(), this::apiMode, coordinator, data);
+        LullabyApiImpl.publish(api);
         getLogger().at(Level.INFO).log("Lullaby ready, mode %s, %s", modeName(), settings.defaultRule().describe());
+    }
+
+    /** "native" or "manual" for the API, without the fallback note. */
+    private String apiMode() {
+        return natives != null && natives.isActive() ? "native" : "manual";
     }
 
     @Override
     protected void shutdown() {
+        // LullabyApiImpl was loaded in start, so withdrawing loads no class for the first time.
+        if (api != null) {
+            LullabyApiImpl.withdraw(api);
+            api = null;
+        }
         // The IO thread stops first so a reload still in its queue cannot install the copies again after
         // they were removed. close() also refuses any install that slips through after a slow drain.
         stopIo();

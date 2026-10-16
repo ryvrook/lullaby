@@ -8,6 +8,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.ryvrook.lullaby.api.SleepStatus;
 import dev.ryvrook.lullaby.config.Settings;
 import dev.ryvrook.lullaby.data.LullabyData;
 import dev.ryvrook.lullaby.model.Requirement;
@@ -17,6 +18,9 @@ import dev.ryvrook.lullaby.weather.StormClearer;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
@@ -50,11 +54,12 @@ public final class SleepCoordinator {
     private final HytaleLogger logger;
     private final Runnable saveData;
     private final BooleanSupplier nativeActive;
+    private final SleepEvents events;
     private final Map<String, WorldState> states = new ConcurrentHashMap<>();
     private volatile long lastErrorLog;
 
     public SleepCoordinator(Supplier<Settings> settings, LullabyData data, AfkTracker afk, Announcer announcer,
-                            HytaleLogger logger, Runnable saveData, BooleanSupplier nativeActive) {
+                            HytaleLogger logger, Runnable saveData, BooleanSupplier nativeActive, SleepEvents events) {
         this.settings = settings;
         this.data = data;
         this.afk = afk;
@@ -62,6 +67,7 @@ public final class SleepCoordinator {
         this.logger = logger;
         this.saveData = saveData;
         this.nativeActive = nativeActive;
+        this.events = events == null ? SleepEvents.NONE : events;
     }
 
     private WorldState state(World world) {
@@ -129,6 +135,37 @@ public final class SleepCoordinator {
         state(world).forceSkip = true;
     }
 
+    // ---- the read API -----------------------------------------------------
+
+    /** The worlds counted since start and not removed, sorted. Safe from any thread. */
+    public List<String> worlds() {
+        List<String> out = new ArrayList<>(states.keySet());
+        out.sort(null);
+        return out;
+    }
+
+    /** The last count of a world as plain values. Safe from any thread. */
+    public SleepStatus status(String world) {
+        WorldState st = world == null ? null : states.get(world);
+        SleepSnapshot snap = st == null ? null : st.lastSnapshot;
+        long lastSkipAt = st == null ? 0 : st.lastSkipAt;
+        return status(world, settings.get(), snap, lastSkipAt, data.nightsSkipped(world), System.currentTimeMillis());
+    }
+
+    /** Builds the plain status. A missing count gives zeros with needed 1. */
+    static SleepStatus status(String world, Settings s, SleepSnapshot snap, long lastSkipAt, int nights, long now) {
+        Rule rule = s.ruleFor(world);
+        SleepSnapshot n = snap == null ? SleepSnapshot.empty() : snap;
+        long cooldown = lastSkipAt == 0 ? 0 : secondsLeft(now, lastSkipAt, s.cooldownSeconds());
+        return new SleepStatus(world, rule.enabled(), requirementId(rule), n.online(), n.eligible(), n.inBed(), n.ready(),
+                n.needed(), n.progress(rule.requirement() == Requirement.DYNAMIC), cooldown, nights);
+    }
+
+    /** percent, count or dynamic. */
+    public static String requirementId(Rule rule) {
+        return rule.requirement().name().toLowerCase(Locale.ROOT);
+    }
+
     // ---- the per tick work ------------------------------------------------
 
     /** Called every tick for every world by the Lullaby tick system. */
@@ -173,7 +210,7 @@ public final class SleepCoordinator {
                 time.cancelInterpolation();
                 st.manualSkipping = false;
             } else if (!time.isInterpolating()) {
-                finish(world, store, time, st, s, true);
+                finish(world, store, time, st, s, SleepEvents.MANUAL);
             }
         }
         if (st.dynamicActive) {
@@ -197,6 +234,7 @@ public final class SleepCoordinator {
             st.lastAnnounced = 0;
             st.dynamicActive = false;
             st.lastSnapshot = null;
+            publishProgress(world, st, SleepSnapshot.empty(), rule);
             return;
         }
         SleepSnapshot snap = Eligibility.snapshot(world, store, s, rule, data, afk, now);
@@ -204,8 +242,10 @@ public final class SleepCoordinator {
         if (!rule.enabled() || !WakeTime.canSleep(world)) {
             st.lastAnnounced = 0;
             st.dynamicActive = false;
+            publishProgress(world, st, SleepSnapshot.empty(), rule);
             return;
         }
+        publishProgress(world, st, snap, rule);
         if (snap.inBed() != st.lastAnnounced) {
             if (snap.inBed() > 0 && s.progressMessages() && snap.online() > 1) {
                 announcer.progress(world, snap, rule, s);
@@ -235,6 +275,20 @@ public final class SleepCoordinator {
         }
     }
 
+    /** Fires the progress event when the in bed count moved since the last one. */
+    private void publishProgress(World world, WorldState st, SleepSnapshot snap, Rule rule) {
+        if (!progressChanged(st.lastPublished, snap.inBed())) {
+            return;
+        }
+        st.lastPublished = snap.inBed();
+        events.progress(world.getName(), requirementId(rule), snap, snap.progress(rule.requirement() == Requirement.DYNAMIC));
+    }
+
+    /** A progress event goes out when the in bed count differs from the one last sent. */
+    static boolean progressChanged(int lastPublished, int inBed) {
+        return lastPublished != inBed;
+    }
+
     /**
      * Manual mode leaves vanilla in charge when everyone is in bed. A vanilla slumber that ends after moving
      * the clock by at least an hour finished the night, so it is counted and announced like a Lullaby skip.
@@ -254,7 +308,7 @@ public final class SleepCoordinator {
             Instant start = st.vanillaSlumberStart;
             st.vanillaSlumberStart = null;
             if (rule.enabled() && completedSlumber(start, time.getGameTime())) {
-                skipped(world, store, time, st, s, st.vanillaSlumberSleepers);
+                skipped(world, store, time, st, s, st.vanillaSlumberSleepers, SleepEvents.VANILLA);
             }
         }
     }
@@ -266,7 +320,7 @@ public final class SleepCoordinator {
         st.manualSkipping = true;
         if (s.skipSeconds() <= 0) {
             time.setGameTime(target, world, store);
-            finish(world, store, time, st, s, true);
+            finish(world, store, time, st, s, SleepEvents.MANUAL);
             return;
         }
         time.startDayTimeInterpolation(WakeTime.dayProgress(target), s.skipSeconds(), true, false, world, store);
@@ -274,14 +328,12 @@ public final class SleepCoordinator {
 
     /** Morning is here. Wakes the sleepers, plays the success sound and runs the skip effects. */
     private void finish(World world, Store<EntityStore> store, WorldTimeResource time, WorldState st, Settings s,
-                        boolean countIt) {
+                        String cause) {
         st.manualSkipping = false;
         st.dynamicActive = false;
         st.dynamicTarget = null;
         int woken = Waker.wake(store, true, Waker.successSound(WakeTime.sleepConfig(world)));
-        if (countIt) {
-            skipped(world, store, time, st, s, woken);
-        }
+        skipped(world, store, time, st, s, woken, cause);
     }
 
     private void forceSkip(World world, Store<EntityStore> store, WorldTimeResource time, WorldSomnolence somnolence,
@@ -293,7 +345,7 @@ public final class SleepCoordinator {
             time.cancelInterpolation();
         }
         time.setGameTime(WakeTime.wakeInstant(time.getGameTime(), WakeTime.wakeHour(world)), world, store);
-        finish(world, store, time, st, s, true);
+        finish(world, store, time, st, s, SleepEvents.ADMIN);
     }
 
     // ---- dynamic ----------------------------------------------------------
@@ -325,7 +377,7 @@ public final class SleepCoordinator {
             return;
         }
         time.setGameTime(st.dynamicTarget, world, store);
-        finish(world, store, time, st, s, true);
+        finish(world, store, time, st, s, SleepEvents.DYNAMIC);
     }
 
     // ---- native slumber hooks ---------------------------------------------
@@ -389,6 +441,7 @@ public final class SleepCoordinator {
     /** A native slumber ended. {@code completed} is false when it was cut short. */
     public void nativeEnded(World world, Store<EntityStore> store, boolean completed, int sleepers) {
         WorldState st = state(world);
+        String cause = st.lullabySlumber ? SleepEvents.NATIVE : SleepEvents.VANILLA;
         st.lullabySlumber = false;
         if (!completed) {
             return;
@@ -398,13 +451,13 @@ public final class SleepCoordinator {
             return;
         }
         WorldTimeResource time = store.getResource(WorldTimeResource.getResourceType());
-        skipped(world, store, time, st, s, sleepers);
+        skipped(world, store, time, st, s, sleepers, cause);
     }
 
     // ---- after every skip -------------------------------------------------
 
     private void skipped(World world, Store<EntityStore> store, WorldTimeResource time, WorldState st, Settings s,
-                         int sleepers) {
+                         int sleepers, String cause) {
         st.lastSkipAt = System.currentTimeMillis();
         st.lastAnnounced = 0;
         int total = data.countSkip(world.getName());
@@ -418,6 +471,7 @@ public final class SleepCoordinator {
             }
         }
         announcer.skipped(world, sleepers, s);
+        events.skipped(world.getName(), sleepers, total, cause);
         logger.at(Level.INFO).log("Lullaby skipped the night in %s, %d slept, %d nights so far, storms cleared in %d environments",
                 world.getName(), sleepers, total, calmed);
     }

@@ -13,6 +13,8 @@ final class WorldState {
     float afkTimer;
     /** The in bed count the last progress line was sent for. */
     int lastAnnounced;
+    /** The in bed count the last SleepProgressEvent was fired for. */
+    int lastPublished;
     /** A manual skip is moving the clock towards morning. */
     boolean manualSkipping;
     /** Dynamic mode is speeding the clock up. */
