@@ -144,6 +144,18 @@ not, Lullaby itself was reloaded, and a daemon thread named `Lullaby-dependents`
 lock in `ryvrook.dependents.lock` and reloads each one that is still on the instance it had at start. It never
 runs on a world thread or the IO thread, and it does nothing once shutdown has begun.
 
+Two plugins consume the API today. SocialBridge 0.2.0 and RestAPI 0.2.0 list `Ryvrook:Lullaby` `>=1.1.0` under
+`OptionalDependencies`, keep every Lullaby type in one class they load by name after a presence check
+(`LullabyBridge` and `LullabyRoutes`), bind through `LullabyApi.onEnable` and `onDisable`, and have an auto,
+always, never setting each. RestAPI also reads the length of the `Ignored` array in `ignored.json`, because the
+API has no call for it, so that file keeps its shape. Lullaby itself lists no sibling and loads none of their
+classes, so it boots and works the same with zero, one or all eight of them.
+
+The suite follows one reload rule. When a plugin with an API is reloaded, it reloads the plugins that list it, each
+once. Two reloaders in a row share the one lock, and the second finds the shared dependents already on a new
+instance and leaves them alone. A reload of SocialBridge or RestAPI does not touch Lullaby, because Lullaby lists
+neither.
+
 Any stop path must never load a sibling class for the first time. The plugin manager holds its write lock during
 shutdown and the bridge class loader needs the read lock, which showed up as a 5 second hang in the suite. Lullaby
 loads `LullabyApi` and `LullabyApiImpl` in `start`, so withdrawing the API in `shutdown` loads nothing new.

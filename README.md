@@ -109,9 +109,17 @@ usual, and weather forced with `/weather set` is left alone.
 
 ## With the other mods
 
-Lullaby needs none of the other mods and runs fine next to all of them. Since 1.1.0 it has a small read API and
-two engine events for other plugins, which SocialBridge and RestAPI use to show who is in bed and to post a
-skipped night.
+Lullaby needs none of the other mods and reads none of them. Since 1.1.0 it has a small read API and two engine
+events for other plugins. Two of my mods use them when Lullaby is installed, and nothing changes on the Lullaby
+side either way.
+
+| Mod | What appears when Lullaby is there | Setting in that mod |
+| --- | --- | --- |
+| SocialBridge 0.2.0 | A Discord post when a world skips the night, off until `lullaby.notices` is true, filtered by `lullaby.causes`. `/server` lists the players in bed and the nights skipped per world | `suite.lullaby` (auto, always, never), `lullaby.server` |
+| RestAPI 0.2.0 | `/api/lullaby` and `/api/lullaby/worlds/{world}` with the mode, sleepers, needed sleepers and nights skipped, for keys with the `lullaby` scope | `siblings.lullaby` (auto, always, never) |
+
+TrackerAPI, Coinage, Dominion Factions, Feats, Chronicle Stats and Atlas have no link to Lullaby. TrackerAPI
+counts sleeps on its own from the bed state, so its `sleeps` counter works with or without Lullaby.
 
 | What | Where |
 | --- | --- |
@@ -137,7 +145,7 @@ in their manifest two seconds later, so they link to the new copy.
 JDK 25, wrapper included.
 
 ```bash
-./gradlew build          # jar in build/libs/, runs the 50 tests
+./gradlew build          # jar in build/libs/, runs the 67 tests
 ./gradlew installMod     # also copies it into your local UserData/Mods, -PmodsDir=<path> for elsewhere
 ```
 
