@@ -21,10 +21,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 /**
- * The plugins that list Lullaby as a dependency. After a {@code /plugin reload} of Lullaby their linked
- * api classes belong to the old instance, so the {@code LullabyApi.onEnable} hooks they hold never see the
- * new one and they have no economy until they are reloaded. On a fresh boot none of them is enabled yet
- * when Lullaby starts, because the dependency orders the load, so an enabled dependent at start time
+ * The plugins that list Lullaby as a dependency, SocialBridge and RestAPI today. After a {@code /plugin reload}
+ * of Lullaby their linked api classes belong to the old instance, so the {@code LullabyApi.onEnable} hooks they
+ * hold never see the new one and they show no sleepers until they are reloaded. On a fresh boot none of them is
+ * enabled yet when Lullaby starts, because the dependency orders the load, so an enabled dependent at start time
  * means Lullaby itself was reloaded and the dependents are reloaded for the owner one after another, each
  * after the dependents it reads itself. The same class as TrackerAPI's and Coinage's, with the same suite lock.
  */
@@ -48,8 +48,8 @@ final class Dependents {
 
     /**
      * The enabled plugins whose manifest names {@code self} under its dependencies, ordered so a plugin
-     * comes after the others in the list that it names itself. Dominion reads Feats, so Feats is reloaded
-     * before it.
+     * comes after the others in the list that it names itself. SocialBridge and RestAPI do not list each other,
+     * so they keep the load order.
      */
     static List<Dependent> enabled(PluginIdentifier self, HytaleLogger logger) {
         List<Dependent> found = new ArrayList<>();
