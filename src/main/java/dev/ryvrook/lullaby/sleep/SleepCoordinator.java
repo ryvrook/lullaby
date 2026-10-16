@@ -472,7 +472,7 @@ public final class SleepCoordinator {
         }
         announcer.skipped(world, sleepers, s);
         events.skipped(world.getName(), sleepers, total, cause);
-        logger.at(Level.INFO).log("Lullaby skipped the night in %s, %d slept, %d nights so far, storms cleared in %d environments",
-                world.getName(), sleepers, total, calmed);
+        logger.at(Level.INFO).log("Lullaby skipped the night in %s, cause %s, sleepers %d, nights skipped %d, storms cleared %d",
+                world.getName(), cause, sleepers, total, calmed);
     }
 }
