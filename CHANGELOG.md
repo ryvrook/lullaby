@@ -17,6 +17,10 @@ Nothing changes for players and no setting changed, so updating is a jar swap.
   the same suite lock as TrackerAPI and Coinage.
 - 17 more unit tests, 67 in all.
 
+### Changed
+
+- The skip log line names the cause and reads `sleepers 3, nights skipped 12` instead of `1 nights so far`.
+
 ## 1.0.1 - 2026-10-15
 
 Nothing changes for players and no setting changed, so updating is a jar swap.
