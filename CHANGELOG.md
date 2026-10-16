@@ -3,6 +3,20 @@
 Every notable change to Lullaby is recorded here. The format follows Keep a Changelog and the project uses
 semantic versioning.
 
+## 1.1.0 - 2026-10-16
+
+Nothing changes for players and no setting changed, so updating is a jar swap.
+
+### Added
+
+- A read API for other plugins in `dev.ryvrook.lullaby.api`, version 1. `LullabyApi` gives the sleepers, the
+  needed sleepers and the progress of each world, the nights skipped per world and in total, and the mode, with
+  static `onEnable` and `onDisable` hooks. See `docs/API.md`.
+- `NightSkippedEvent` and `SleepProgressEvent` on the engine event bus, with plain values only.
+- A `/plugin reload` of Lullaby reloads the enabled plugins that list it in their manifest two seconds later, under
+  the same suite lock as TrackerAPI and Coinage.
+- 17 more unit tests, 67 in all.
+
 ## 1.0.1 - 2026-10-15
 
 Nothing changes for players and no setting changed, so updating is a jar swap.

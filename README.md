@@ -13,7 +13,7 @@ A pre-release server logs a warning that the plugin targets `>=0.7.0`. The plugi
 
 ## Install
 
-Drop `Lullaby-1.0.1.jar` into `UserData/Mods` for a singleplayer world (`%APPDATA%\Hytale\UserData\Mods` on
+Drop `Lullaby-1.1.0.jar` into `UserData/Mods` for a singleplayer world (`%APPDATA%\Hytale\UserData\Mods` on
 Windows, `~/Library/Application Support/Hytale/UserData/Mods` on macOS) or into the server's `mods/` folder.
 Start the server and look for `Lullaby ready, mode native, 50% of players needed` in the log. The config is
 written to `mods/Ryvrook_Lullaby/Lullaby.json`.
@@ -109,8 +109,18 @@ usual, and weather forced with `/weather set` is left alone.
 
 ## With the other mods
 
-None. Lullaby does not talk to TrackerAPI, Coinage, Dominion, Chronicle Stats, Feats or Atlas, and none of them
-need it. It runs fine next to all six.
+Lullaby needs none of the other mods and runs fine next to all of them. Since 1.1.0 it has a small read API and
+two engine events for other plugins, which SocialBridge and RestAPI use to show who is in bed and to post a
+skipped night.
+
+| What | Where |
+| --- | --- |
+| `LullabyApi` | Sleepers, needed sleepers and progress per world, nights skipped, the mode |
+| `NightSkippedEvent` | Fires once per skipped night with the world, the sleepers and the cause |
+| `SleepProgressEvent` | Fires when the number of players in bed changes in a world |
+
+The full reference is [docs/API.md](docs/API.md). A `/plugin reload` of Lullaby reloads the plugins that list it
+in their manifest two seconds later, so they link to the new copy.
 
 ## Limits
 
@@ -119,7 +129,7 @@ need it. It runs fine next to all six.
 - The vanilla chat notice ("Steve is sleeping") and the small counter sleepers see on screen still count every
   player, because vanilla and the client draw them. Lullaby's own line has the real numbers.
 - A headless server has no players, so the threshold, the wake up and dynamic nights can only be checked on a
-  client with two or more players in the world. I test those by hand. The 50 unit tests cover the maths and the
+  client with two or more players in the world. I test those by hand. The 67 unit tests cover the maths and the
   decisions.
 
 ## Building

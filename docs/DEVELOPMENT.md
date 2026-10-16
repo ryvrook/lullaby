@@ -19,19 +19,20 @@ Hytale server artifact comes from the Hytale Maven repository, and `hytale_chann
 
 ## Tests
 
-`./gradlew build` runs 50 JUnit tests under `src/test/java` without a server. The server jar sits on the test
+`./gradlew build` runs 67 JUnit tests under `src/test/java` without a server. The server jar sits on the test
 classpath only for the codecs, bson and the logger. They cover the threshold maths in `Rule`, `SleepSnapshot`,
 the clamping and per world inheritance in `Settings`, reading and writing `Lullaby.json` through the codec, the
 wake up and night maths in `WakeTime`, the start, cooldown, hold and dynamic speed decisions in
-`SleepCoordinator`, the progress line, the idle check, the storm words and the two data files with a broken one
-kept aside. Anything that needs a store, a world or the registry swap is left to the smoke test below and to a
+`SleepCoordinator`, the progress line, the idle check, the storm words, the two data files with a broken one
+kept aside, the API hooks and status values and the order of the dependents reload. Anything that needs a store, a world or the registry swap is left to the smoke test below and to a
 client with real players.
 
 ## Source layout
 
 | Package | What lives there |
 | --- | --- |
-| `dev.ryvrook.lullaby` | `LullabyPlugin`, the lifecycle, the IO thread, config reloads and player events |
+| `dev.ryvrook.lullaby` | `LullabyPlugin`, the lifecycle, the IO thread, config reloads and player events, `LullabyApiImpl`, `BusEvents` and `Dependents` |
+| `api` | `LullabyApi`, `SleepStatus` and the two bus events, the public contract described in `docs/API.md` |
 | `config` | `LullabyConfig` and `WorldRule`, the codecs for `Lullaby.json`, and `Settings`, the immutable copy world threads read |
 | `model` | `Mode`, `Requirement`, `Rule` with the threshold maths, and `SleepSnapshot` |
 | `sleep` | `SleepCoordinator`, `Eligibility`, `AfkTracker`, `Waker`, `WakeTime` and `Announcer` |
@@ -126,6 +127,26 @@ refuses. While the rule is dynamic, the world may sleep, no cooldown runs and en
 `DynamicMaxSpeed` with the ready share and `nightRate` is 34560 game seconds over the world's night length.
 Reaching the wake up time wakes everyone and counts as a skip. It never touches the slumber resource, so it
 works the same in native and manual mode, and it steps aside while a slumber runs.
+
+## API and reloads
+
+`LullabyApiImpl` is published at the end of `start` and withdrawn first thing in `shutdown`. It reads only the
+volatile `lastSnapshot` and `lastSkipAt` of each `WorldState` and the concurrent map in `LullabyData`, so any
+thread may call it. `SleepCoordinator` reports progress and skips through the `SleepEvents` interface, and
+`BusEvents` turns them into `SleepProgressEvent` and `NightSkippedEvent` on the engine bus, only when a listener is
+registered. Both fire on the world thread inside the Lullaby tick. The progress event goes out when the in bed
+count differs from the last one sent, tracked in `WorldState.lastPublished`, separate from the chat line so it
+does not depend on `ProgressMessages`.
+
+`Dependents` is the same class as TrackerAPI's and Coinage's. At start it lists the enabled plugins that name
+Lullaby in their manifest. On a fresh boot that list is empty, because the dependency orders the load. When it is
+not, Lullaby itself was reloaded, and a daemon thread named `Lullaby-dependents` waits two seconds, takes the suite
+lock in `ryvrook.dependents.lock` and reloads each one that is still on the instance it had at start. It never
+runs on a world thread or the IO thread, and it does nothing once shutdown has begun.
+
+Any stop path must never load a sibling class for the first time. The plugin manager holds its write lock during
+shutdown and the bridge class loader needs the read lock, which showed up as a 5 second hang in the suite. Lullaby
+loads `LullabyApi` and `LullabyApiImpl` in `start`, so withdrawing the API in `shutdown` loads nothing new.
 
 ## Smoke test on a headless server
 

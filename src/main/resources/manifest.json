@@ -1,7 +1,7 @@
 {
   "Group": "Ryvrook",
   "Name": "Lullaby",
-  "Version": "1.0.1",
+  "Version": "1.1.0",
   "Description": "Skips the night when a share or a set number of players are in bed instead of everyone. Keeps the vanilla sleep clock and leaves AFK, Creative and spectating players out of the count.",
   "Main": "dev.ryvrook.lullaby.LullabyPlugin",
   "Authors": [{ "Name": "ryvrook" }],
