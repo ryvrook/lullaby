@@ -23,6 +23,7 @@ import dev.ryvrook.lullaby.sleep.Announcer;
 import dev.ryvrook.lullaby.sleep.SleepCoordinator;
 import dev.ryvrook.lullaby.systems.LullabyTickSystem;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -53,6 +54,7 @@ public final class LullabyPlugin extends JavaPlugin {
     private ExecutorService io;
     private final AtomicBoolean saveQueued = new AtomicBoolean();
     private volatile LullabyApiImpl api;
+    private volatile boolean stopping;
 
     public LullabyPlugin(JavaPluginInit init) {
         super(init);
@@ -119,6 +121,7 @@ public final class LullabyPlugin extends JavaPlugin {
         api = new LullabyApiImpl(getManifest().getVersion().toString(), this::apiMode, coordinator, data);
         LullabyApiImpl.publish(api);
         getLogger().at(Level.INFO).log("Lullaby ready, mode %s, %s", modeName(), settings.defaultRule().describe());
+        reloadDependentsAfterReload();
     }
 
     /** "native" or "manual" for the API, without the fallback note. */
@@ -126,8 +129,39 @@ public final class LullabyPlugin extends JavaPlugin {
         return natives != null && natives.isActive() ? "native" : "manual";
     }
 
+    /**
+     * Plugins that list Lullaby and are already enabled were linked to the previous instance, so they are reloaded
+     * two seconds from now on a short lived thread of their own, never a world thread or the IO thread.
+     */
+    private void reloadDependentsAfterReload() {
+        List<Dependents.Dependent> dependents = Dependents.enabled(getIdentifier(), getLogger());
+        if (dependents.isEmpty()) {
+            return;
+        }
+        getLogger().at(Level.INFO).log("Lullaby found %d plugins linked to its previous instance and reloads them in two seconds",
+                dependents.size());
+        Thread pass = new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                return;
+            }
+            if (stopping) {
+                return;
+            }
+            try {
+                Dependents.reload(dependents, getLogger());
+            } catch (RuntimeException | LinkageError e) {
+                getLogger().at(Level.WARNING).withCause(e).log("Lullaby could not reload the plugins linked to it");
+            }
+        }, "Lullaby-dependents");
+        pass.setDaemon(true);
+        pass.start();
+    }
+
     @Override
     protected void shutdown() {
+        stopping = true;
         // LullabyApiImpl was loaded in start, so withdrawing loads no class for the first time.
         if (api != null) {
             LullabyApiImpl.withdraw(api);
